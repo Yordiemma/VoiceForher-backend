@@ -1,5 +1,5 @@
 const express = require('express');
-const Database = require('better-sqlite3');
+const sqlite3 = require('better-sqlite3');
 const cors = require('cors');
 const path = require('path');
 const app = express();
@@ -14,23 +14,24 @@ app.use(express.json());
 
 // SQLite Database Setup
 const dbPath = path.resolve(__dirname, './abuse_reports.db');
-const db = new Database(dbPath, { verbose: console.log });
+const db = new sqlite3(dbPath);
 
-try {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS reports (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      age INTEGER,
-      location TEXT,
-      ethnic_group TEXT,
-      type_of_abuse TEXT,
-      description TEXT
-    )
-  `);
-  console.log('Table created or verified.');
-} catch (err) {
-  console.error('Error creating table:', err.message);
-}
+// Create the table if it doesn't exist
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    age INTEGER,
+    location TEXT,
+    ethnic_group TEXT,
+    type_of_abuse TEXT,
+    description TEXT
+  )
+`).run();
+
+// Default route for the root URL
+app.get('/', (req, res) => {
+  res.send('Welcome to the VoiceForHer Backend!');
+});
 
 // POST route to submit a report
 app.post('/reports', (req, res) => {
@@ -39,28 +40,16 @@ app.post('/reports', (req, res) => {
     return res.status(400).send('All fields (age, location, ethnic_group, type_of_abuse, description) are required.');
   }
 
-  try {
-    const query = `INSERT INTO reports (age, location, ethnic_group, type_of_abuse, description) VALUES (?, ?, ?, ?, ?)`;
-    const stmt = db.prepare(query);
-    const info = stmt.run(age, location, ethnic_group, type_of_abuse, description);
-    res.status(201).send({ id: info.lastInsertRowid });
-  } catch (err) {
-    console.error('Error inserting report:', err.message);
-    res.status(500).send('Error submitting the report');
-  }
+  const query = `INSERT INTO reports (age, location, ethnic_group, type_of_abuse, description) VALUES (?, ?, ?, ?, ?)`;
+  db.prepare(query).run(age, location, ethnic_group, type_of_abuse, description);
+  res.status(201).send({ message: 'Report submitted successfully!' });
 });
 
 // GET route to fetch reports
 app.get('/reports', (req, res) => {
-  try {
-    const query = `SELECT * FROM reports`;
-    const stmt = db.prepare(query);
-    const reports = stmt.all();
-    res.status(200).json(reports);
-  } catch (err) {
-    console.error('Error fetching reports:', err.message);
-    res.status(500).send('Error retrieving reports');
-  }
+  const query = `SELECT * FROM reports`;
+  const reports = db.prepare(query).all();
+  res.status(200).json(reports);
 });
 
 // Start server
