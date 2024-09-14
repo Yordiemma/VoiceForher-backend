@@ -1,5 +1,5 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const Database = require('better-sqlite3');
 const cors = require('cors');
 const path = require('path');
 const app = express();
@@ -14,29 +14,23 @@ app.use(express.json());
 
 // SQLite Database Setup
 const dbPath = path.resolve(__dirname, './abuse_reports.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error opening database:', err.message);
-  } else {
-    console.log('Connected to SQLite database.');
-    db.run(`
-      CREATE TABLE IF NOT EXISTS reports (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        age INTEGER,
-        location TEXT,
-        ethnic_group TEXT,
-        type_of_abuse TEXT,
-        description TEXT
-      )
-    `, (err) => {
-      if (err) {
-        console.error('Error creating table:', err.message);
-      } else {
-        console.log('Table created or verified.');
-      }
-    });
-  }
-});
+const db = new Database(dbPath, { verbose: console.log });
+
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      age INTEGER,
+      location TEXT,
+      ethnic_group TEXT,
+      type_of_abuse TEXT,
+      description TEXT
+    )
+  `);
+  console.log('Table created or verified.');
+} catch (err) {
+  console.error('Error creating table:', err.message);
+}
 
 // POST route to submit a report
 app.post('/reports', (req, res) => {
@@ -44,29 +38,29 @@ app.post('/reports', (req, res) => {
   if (!age || !location || !ethnic_group || !type_of_abuse || !description) {
     return res.status(400).send('All fields (age, location, ethnic_group, type_of_abuse, description) are required.');
   }
-  
-  const query = `INSERT INTO reports (age, location, ethnic_group, type_of_abuse, description) VALUES (?, ?, ?, ?, ?)`;
-  db.run(query, [age, location, ethnic_group, type_of_abuse, description], function (err) {
-    if (err) {
-      console.error('Error inserting report:', err.message);
-      res.status(500).send('Error submitting the report');
-    } else {
-      res.status(201).send({ id: this.lastID });
-    }
-  });
+
+  try {
+    const query = `INSERT INTO reports (age, location, ethnic_group, type_of_abuse, description) VALUES (?, ?, ?, ?, ?)`;
+    const stmt = db.prepare(query);
+    const info = stmt.run(age, location, ethnic_group, type_of_abuse, description);
+    res.status(201).send({ id: info.lastInsertRowid });
+  } catch (err) {
+    console.error('Error inserting report:', err.message);
+    res.status(500).send('Error submitting the report');
+  }
 });
 
 // GET route to fetch reports
 app.get('/reports', (req, res) => {
-  const query = `SELECT * FROM reports`;
-  db.all(query, [], (err, rows) => {
-    if (err) {
-      console.error('Error fetching reports:', err.message);
-      res.status(500).send('Error retrieving reports');
-    } else {
-      res.status(200).json(rows);
-    }
-  });
+  try {
+    const query = `SELECT * FROM reports`;
+    const stmt = db.prepare(query);
+    const reports = stmt.all();
+    res.status(200).json(reports);
+  } catch (err) {
+    console.error('Error fetching reports:', err.message);
+    res.status(500).send('Error retrieving reports');
+  }
 });
 
 // Start server

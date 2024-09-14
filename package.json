@@ -8,11 +8,11 @@
     "start": "node server.js"
   },
   "engines": {
-    "node": "20.x" 
+    "node": "18.x" 
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "sqlite3": "^5.1.7"
+    "better-sqlite3": "^8.1.0"
   }
 }
