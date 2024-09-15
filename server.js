@@ -10,7 +10,6 @@ app.use(cors({
   origin: ['https://voice-for-her-frontend.onrender.com', 'http://localhost:3000'] // Frontend URLs allowed
 }));
 
-
 app.use(express.json());
 
 // SQLite Database Setup
@@ -29,27 +28,36 @@ db.prepare(`
   )
 `).run();
 
-// GET route to fetch reports
+// GET route to fetch reports with error handling
 app.get('/reports', (req, res) => {
-  const query = `SELECT * FROM reports`;
-  const reports = db.prepare(query).all();
-  res.status(200).json(reports);
+  try {
+    const query = `SELECT * FROM reports`;
+    const reports = db.prepare(query).all();
+    res.status(200).json(reports);
+  } catch (error) {
+    console.error('Error fetching reports:', error.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
-// POST route to submit a report
+// POST route to submit a report with error handling
 app.post('/reports', (req, res) => {
   const { age, location, ethnic_group, type_of_abuse, description } = req.body;
+
+  // Check if all fields are provided
   if (!age || !location || !ethnic_group || !type_of_abuse || !description) {
     return res.status(400).send('All fields (age, location, ethnic_group, type_of_abuse, description) are required.');
   }
 
-  const query = `INSERT INTO reports (age, location, ethnic_group, type_of_abuse, description) VALUES (?, ?, ?, ?, ?)`;
-  db.prepare(query).run(age, location, ethnic_group, type_of_abuse, description);
-  res.status(201).send({ message: 'Report submitted successfully!' });
+  try {
+    const query = `INSERT INTO reports (age, location, ethnic_group, type_of_abuse, description) VALUES (?, ?, ?, ?, ?)`;
+    db.prepare(query).run(age, location, ethnic_group, type_of_abuse, description);
+    res.status(201).send({ message: 'Report submitted successfully!' });
+  } catch (error) {
+    console.error('Error submitting report:', error.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
-
-// GET route to fetch reports
-
 
 // Start server
 app.listen(PORT, () => {
