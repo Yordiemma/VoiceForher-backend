@@ -7,8 +7,9 @@ const PORT = process.env.PORT || 5000;
 
 // Enable CORS for your frontend URL
 app.use(cors({
-  origin: ['https://voice-for-her-frontend.onrender.com', 'http://localhost:3000']
+  origin: ['https://voice-for-her-frontend.onrender.com', 'http://localhost:3000'] // Frontend URLs allowed
 }));
+
 
 app.use(express.json());
 
@@ -28,9 +29,11 @@ db.prepare(`
   )
 `).run();
 
-// Default route for the root URL
-app.get('/', (req, res) => {
-  res.send('Welcome to the VoiceForHer Backend!');
+// GET route to fetch reports
+app.get('/reports', (req, res) => {
+  const query = `SELECT * FROM reports`;
+  const reports = db.prepare(query).all();
+  res.status(200).json(reports);
 });
 
 // POST route to submit a report
