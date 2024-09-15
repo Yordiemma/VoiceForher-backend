@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 5000;
 
 // Enable CORS for your frontend URL
 app.use(cors({
-  origin: 'https://voice-for-her-frontend.onrender.com'  // Update with your frontend URL
+  origin: ['https://voice-for-her-frontend.onrender.com', 'http://localhost:3000']
 }));
 
 app.use(express.json());
