@@ -49,11 +49,7 @@ app.post('/reports', (req, res) => {
 });
 
 // GET route to fetch reports
-app.get('/reports', (req, res) => {
-  const query = `SELECT * FROM reports`;
-  const reports = db.prepare(query).all();
-  res.status(200).json(reports);
-});
+
 
 // Start server
 app.listen(PORT, () => {
