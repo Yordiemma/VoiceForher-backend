@@ -7,10 +7,32 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
-// PostgreSQL connection setup for both local and production
+
+
+// Create a PostgreSQL connection pool
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, 
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+// Function to create the table if it doesn't exist
+pool.query(`
+  CREATE TABLE IF NOT EXISTS reports (
+    id SERIAL PRIMARY KEY,
+    age INTEGER,
+    location TEXT,
+    ethnic_group TEXT,
+    type_of_abuse TEXT,
+    description TEXT
+  );
+`, (err, res) => {
+  if (err) {
+    console.error('Error creating table:', err);
+  } else {
+    console.log('Table is ready or already exists.');
+  }
 });
 
 // CORS configuration for both local development and Render production
