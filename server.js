@@ -2,7 +2,7 @@ require('dotenv').config();  // Load environment variables
 
 const express = require('express');
 const { Pool } = require('pg');  // PostgreSQL client
-const cors = require('cors');
+const cors = require('cors'); // Import CORS
 const app = express();
 
 // Get PORT and DATABASE_URL from environment variables
@@ -14,6 +14,22 @@ if (!DATABASE_URL) {
   process.exit(1);  // Exit if no database URL is found
 }
 
+// CORS configuration (ADD HERE)
+const allowedOrigins = [
+  'http://localhost:3000', // For local testing
+  'https://voice-for-her-frontend.onrender.com' // Your frontend in production
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
+
 // PostgreSQL connection setup
 const pool = new Pool({
   connectionString: DATABASE_URL,
@@ -21,6 +37,9 @@ const pool = new Pool({
     rejectUnauthorized: false
   }
 });
+
+// Middleware for JSON body parsing (important for POST requests)
+app.use(express.json());
 
 // Create a table if it doesn't exist
 pool.query(`
@@ -40,25 +59,7 @@ pool.query(`
   }
 });
 
-// CORS configuration
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:3000',
-  'https://voiceforher-frontend.onrender.com'
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  }
-}));
-
-app.use(express.json());
-
-// Route to submit a report
+// Routes
 app.post('/reports', async (req, res) => {
   const { age, location, ethnic_group, type_of_abuse, description } = req.body;
 
