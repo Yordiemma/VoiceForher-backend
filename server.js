@@ -1,65 +1,72 @@
+require('dotenv').config();  // Load environment variables
+
 const express = require('express');
-const sqlite3 = require('better-sqlite3');
+const { Pool } = require('pg');  // PostgreSQL client
 const cors = require('cors');
-const path = require('path');
 const app = express();
+
 const PORT = process.env.PORT || 5000;
 
-// Enable CORS for your frontend URL
+// PostgreSQL connection setup for both local and production
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL, 
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
+
+// CORS configuration for both local development and Render production
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:3000',  // Local frontend (for development)
+  'https://voiceforher-frontend.onrender.com'           // Frontend in production (on Render)
+];
+
 app.use(cors({
-  origin: ['https://voice-for-her-frontend.onrender.com', 'http://localhost:3000'] // Frontend URLs allowed
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
 }));
 
 app.use(express.json());
 
-// SQLite Database Setup
-const dbPath = path.resolve(__dirname, './abuse_reports.db');
-const db = new sqlite3(dbPath);
-
-// Create the table if it doesn't exist
-db.prepare(`
-  CREATE TABLE IF NOT EXISTS reports (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    age INTEGER,
-    location TEXT,
-    ethnic_group TEXT,
-    type_of_abuse TEXT,
-    description TEXT
-  )
-`).run();
-
-// GET route to fetch reports with error handling
-app.get('/reports', (req, res) => {
-  try {
-    const query = `SELECT * FROM reports`;
-    const reports = db.prepare(query).all();
-    res.status(200).json(reports);
-  } catch (error) {
-    console.error('Error fetching reports:', error.message);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// POST route to submit a report with error handling
-app.post('/reports', (req, res) => {
+// Route to submit a report
+app.post('/reports', async (req, res) => {
   const { age, location, ethnic_group, type_of_abuse, description } = req.body;
 
-  // Check if all fields are provided
   if (!age || !location || !ethnic_group || !type_of_abuse || !description) {
-    return res.status(400).send('All fields (age, location, ethnic_group, type_of_abuse, description) are required.');
+    return res.status(400).send('All fields are required.');
   }
 
+  const query = `
+    INSERT INTO reports (age, location, ethnic_group, type_of_abuse, description)
+    VALUES ($1, $2, $3, $4, $5) RETURNING id
+  `;
+
   try {
-    const query = `INSERT INTO reports (age, location, ethnic_group, type_of_abuse, description) VALUES (?, ?, ?, ?, ?)`;
-    db.prepare(query).run(age, location, ethnic_group, type_of_abuse, description);
-    res.status(201).send({ message: 'Report submitted successfully!' });
-  } catch (error) {
-    console.error('Error submitting report:', error.message);
-    res.status(500).json({ message: 'Internal server error' });
+    const result = await pool.query(query, [age, location, ethnic_group, type_of_abuse, description]);
+    res.status(201).send({ id: result.rows[0].id });
+  } catch (err) {
+    console.error('Error inserting report:', err.message);
+    res.status(500).send('Error submitting the report');
   }
 });
 
-// Start server
+// Route to fetch all reports
+app.get('/reports', async (req, res) => {
+  const query = `SELECT * FROM reports`;
+
+  try {
+    const result = await pool.query(query);
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error fetching reports:', err.message);
+    res.status(500).send('Error retrieving reports');
+  }
+});
+
+// Start the server
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
