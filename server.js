@@ -4,6 +4,7 @@ const express = require('express');
 const { Pool } = require('pg');  // PostgreSQL client
 const cors = require('cors'); // Import CORS
 const app = express();
+const path = require('path'); 
 
 // Get PORT and DATABASE_URL from environment variables
 const PORT = process.env.PORT || 5000;
@@ -17,7 +18,7 @@ if (!DATABASE_URL) {
 // CORS configuration (ADD HERE)
 const allowedOrigins = [
   'http://localhost:3000', // For local testing
-  'https://voice-for-her-frontend.onrender.com' // Your frontend in production
+  'https://voice-for-her-frontend.onrender.com' //  frontend in production
 ];
 
 app.use(cors({
@@ -93,6 +94,15 @@ app.get('/reports', async (req, res) => {
     res.status(500).send('Error retrieving reports');
   }
 });
+
+// Serve static files from the React app build
+app.use(express.static(path.join(__dirname, 'build')));
+
+// Catch-all handler to serve React's index.html for non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
 
 // Start the server
 app.listen(PORT, () => {
