@@ -5,19 +5,24 @@ const { Pool } = require('pg');  // PostgreSQL client
 const cors = require('cors');
 const app = express();
 
+// Get PORT and DATABASE_URL from environment variables
 const PORT = process.env.PORT || 5000;
+const DATABASE_URL = process.env.DATABASE_URL;
 
+if (!DATABASE_URL) {
+  console.error('DATABASE_URL environment variable not found!');
+  process.exit(1);  // Exit if no database URL is found
+}
 
-
-// Create a PostgreSQL connection pool
+// PostgreSQL connection setup
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
   }
 });
 
-// Function to create the table if it doesn't exist
+// Create a table if it doesn't exist
 pool.query(`
   CREATE TABLE IF NOT EXISTS reports (
     id SERIAL PRIMARY KEY,
@@ -35,10 +40,10 @@ pool.query(`
   }
 });
 
-// CORS configuration for both local development and Render production
+// CORS configuration
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:3000',  // Local frontend (for development)
-  'https://voiceforher-frontend.onrender.com'           // Frontend in production (on Render)
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+  'https://voiceforher-frontend.onrender.com'
 ];
 
 app.use(cors({
