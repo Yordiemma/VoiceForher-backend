@@ -34,10 +34,9 @@ app.use(cors({
 // PostgreSQL connection setup
 const pool = new Pool({
   connectionString: DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
+
 
 // Middleware for JSON body parsing (important for POST requests)
 app.use(express.json());
