@@ -18,7 +18,8 @@ if (!DATABASE_URL) {
 // CORS configuration (ADD HERE)
 const allowedOrigins = [
   'http://localhost:3000', // For local testing
-  'https://voice-for-her-frontend.onrender.com' //  frontend in production
+  'https://voice-for-her-frontend.onrender.com', //  frontend in production
+  'https://www.voiceforher.info' // New custom domain for the frontend
 ];
 
 app.use(cors({
