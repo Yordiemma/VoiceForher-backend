@@ -7,6 +7,7 @@ const app = express();
 const path = require('path'); 
 const rateLimit = require('express-rate-limit'); // Import rate limiting
 
+
 // Get PORT and DATABASE_URL from environment variables
 const PORT = process.env.PORT || 5000;
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -130,6 +131,8 @@ app.get('/reports-summary', async (req, res) => {
 app.use(express.static(path.join(__dirname, 'build')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
 
+
 // Start the server
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
+// dont forget to delete the delete database code yordt
