@@ -48,6 +48,7 @@ app.use(rateLimit({
   max: 100,  // Limit each IP to 100 requests per window
   message: 'Too many requests, please try again later.',
 }));
+// const authenticateJWT = (req, res, next) => { ... } tis protact my data not to show on consule
 
 // JWT Middleware
 const authenticateJWT = (req, res, next) => {
@@ -56,15 +57,38 @@ const authenticateJWT = (req, res, next) => {
   if (token) {
     jwt.verify(token.split(' ')[1], process.env.JWT_SECRET, (err, user) => {
       if (err) {
+        console.error('Authorization failed:', err.message); // Log error but not sensitive data
         return res.sendStatus(403); // Forbidden
       }
       req.user = user;
       next();
     });
   } else {
+    console.error('No token provided'); // Log that no token was provided
     res.sendStatus(401); // Unauthorized
   }
 };
+
+// // JWT Middleware
+// const authenticateJWT = (req, res, next) => {
+//   const token = req.headers.authorization;
+
+//   if (token) {
+//     jwt.verify(token.split(' ')[1], process.env.JWT_SECRET, (err, user) => {
+//       if (err) {
+//         console.error('Authorization failed:', err.message); // Log error but not sensitive data
+//         return res.sendStatus(403); // Forbidden
+//       }
+//       req.user = user;
+//       next();
+      
+//     });
+//   } else {
+//     console.error('No token provided'); // Log that no token was provided
+//     res.sendStatus(401); // Unauthorized
+//   }
+// };
+
 
 // Create a table if it doesn't exist
 pool.query(`
