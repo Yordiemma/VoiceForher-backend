@@ -159,4 +159,3 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.htm
 // Start the server
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-// dont forget to delete the delete database code yordt
